@@ -1,0 +1,63 @@
+# ================================================================================
+# Pragmatic Lakehouse Architecture (PLA)
+# PLA Open Blueprint: PLA-OBP-002-v01
+# Title: Governing the Zone Boundaries
+# File: PLA-OBP-002-v01-governing-zone-boundaries.yaml
+# ================================================================================
+# DISCLAIMER: This is an illustrative sample contract only.
+# It is not production-ready. Adapt to your platform, tooling,
+# and catalog maturity level.
+# ================================================================================
+
+sales_transactions_copper_silver_data_contract:
+  version: 1.0.0
+  producer: central-data-team
+  consumers: [finance-domain-team, sales-domain-team]
+  zone_boundary: copper_to_silver
+  effective_date: 2026-01-01
+
+  dataset:
+    name: copper.sales_transactions
+    refresh_cadence: daily
+    delivery_time: "06:00 UTC"
+    latency_tolerance: 30min
+
+  schema:
+    - field: transaction_id
+      type: string
+      nullable: false
+      classification: internal
+
+    - field: business_unit
+      type: string
+      nullable: false
+      classification: internal
+      master_data_validated: true     # Validated against enterprise Business Unit master
+
+    - field: amount
+      type: decimal(18,2)
+      nullable: false
+      classification: confidential    # Triggers column masking for unauthorized roles
+
+    - field: currency
+      type: string
+      nullable: false
+      classification: internal
+      reference_data_validated: true  # Validated against enterprise currency reference list
+
+    - field: transaction_date
+      type: date
+      nullable: false
+      classification: internal
+
+    - field: recognition_policy
+      type: string
+      nullable: false
+      classification: internal
+      allowed_values: [ASC606, IFRS15]  # Enforced by Copper custom rule library
+
+  change_policy:
+    notification_period: 30_days
+    versioning: semantic
+    breaking_changes_require: central_team_approval
+    deprecation_period: 60_days
